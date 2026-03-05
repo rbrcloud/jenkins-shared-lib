@@ -52,14 +52,14 @@ def call(Map config = [:]) {
                 }
             }
         }
-    }
-    post {
-        always {
-            echo "Cleaning up workspace for ${SERVICE_NAME}"
-            cleanWs()
-        }
-        failure {
-            echo "Build failed for ${SERVICE_NAME}. Please check the logs for details."
+        post {
+            always {
+                echo "Cleaning up workspace for ${SERVICE_NAME}"
+                cleanWs()
+            }
+            failure {
+                echo "Build failed for ${SERVICE_NAME}. Please check the logs for details."
+            }
         }
     }
 }
