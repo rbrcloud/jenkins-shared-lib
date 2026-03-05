@@ -2,6 +2,11 @@ def call(Map config = [:]) {
     pipeline {
         agent any
 
+        tools {
+            jdk 'sdkman-java'
+            maven 'maven_3.9.12'
+        }
+
         environment {
             DOCKER_REGISTRY = "ghcr.io"
             SERVICE_NAME = "${config.serviceName}"
