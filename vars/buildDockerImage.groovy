@@ -8,6 +8,8 @@ def call(Map config = [:]) {
     def imageTag = "${imageName}:${config.tag}"
     def latestTag = "${imageName}:latest"
 
+    def dockerConfigDir = "${WORKSPACE}/.docker-${config.serviceName}"
+
     // Authenticate and push to the registry
     withCredentials([usernamePassword(credentialsId: "ghcr-token", usernameVariable: "GH_USERNAME", passwordVariable: "GH_TOKEN")]) {
 
@@ -18,19 +20,23 @@ def call(Map config = [:]) {
             --build-arg GITHUB_USERNAME=${GH_USERNAME} \
             --build-arg GITHUB_TOKEN=${GH_TOKEN} \
             -t ${imageTag} .
+
+            mkdir -p ${dockerConfigDir}
+            export DOCKER_CONFIG=${dockerConfigDir}
+
+            echo "Logging in to ${registry} with user ${GH_USERNAME}"
+            echo ${GH_TOKEN} | docker login ${registry} -u ${GH_USERNAME} --password-stdin
+
+            echo "Pushing Docker image ${imageTag} to ${registry}"
+            docker push ${imageTag}
+
+            if [ "${env.BRANCH_NAME}" = "main" ] || [ "${env.BRANCH_NAME}" = "master" ]; then
+                echo "Branch name is ${env.BRANCH_NAME}, tagging as latest..."
+                docker tag ${imageTag} ${latestTag}
+                docker push ${latestTag}
+            fi
         """
-
-        echo "Logging in to ${registry} with user ${GH_USERNAME}"
-        sh "echo ${GH_TOKEN} | docker login ${registry} -u ${GH_USERNAME} --password-stdin"
-
-        echo "Pushing Docker image ${imageTag} to ${registry}"
-        sh "docker push ${imageTag}"
-
-        if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
-            echo "Branch name is ${env.BRANCH_NAME}, tagging as latest..."
-            sh "docker tag ${imageTag} ${latestTag}"
-            sh "docker push ${latestTag}"
-        }
+        sh "rm -rf ${dockerConfigDir}"
         echo "Successfully pushed ${imageTag} to ${registry}"
     }
 }
