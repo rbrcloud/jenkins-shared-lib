@@ -1,3 +1,6 @@
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 def call(Map config = [:]) {
     pipeline {
         agent any
@@ -10,14 +13,19 @@ def call(Map config = [:]) {
         environment {
             DOCKER_REGISTRY = "ghcr.io"
             SERVICE_NAME = "${config.serviceName}"
-            IMAGE_TAG = "v-${BUILD_NUMBER}-${env.GIT_COMMIT.take(7)}"
         }
 
         stages {
             stage("Initialize") {
                 steps {
-                    echo "Starting build for ${SERVICE_NAME} with image tag ${IMAGE_TAG}"
                     checkout scm
+                    script {
+                        def now = LocalDateTime.now();
+                        def timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmm"))
+                        env.IMAGE_TAG = "${timestamp}-${env.GIT_COMMIT.take(7)}"
+                        echo "Generated image tag: ${env.IMAGE_TAG} for service ${config.serviceName}"
+                    }
+                    echo "Starting build for ${env.SERVICE_NAME} with image tag ${env.IMAGE_TAG}"
                 }
             }
 
