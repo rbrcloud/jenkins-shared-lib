@@ -16,16 +16,16 @@ def call(Map config = [:]) {
         // Build the Docker image for rbrcloud organization
         echo "Building Docker image ${imageTag} for service ${config.serviceName}"
         sh """
-            docker build \
-            --build-arg GITHUB_USERNAME=${GH_USERNAME} \
-            --build-arg GITHUB_TOKEN=${GH_TOKEN} \
-            -t ${imageTag} .
-
             mkdir -p ${dockerConfigDir}
             export DOCKER_CONFIG=${dockerConfigDir}
 
             echo "Logging in to ${registry} with user ${GH_USERNAME}"
             echo ${GH_TOKEN} | docker login ${registry} -u ${GH_USERNAME} --password-stdin
+
+            docker build \
+            --build-arg GITHUB_USERNAME=${GH_USERNAME} \
+            --build-arg GITHUB_TOKEN=${GH_TOKEN} \
+            -t ${imageTag} .
 
             echo "Pushing Docker image ${imageTag} to ${registry}"
             docker push ${imageTag}
