@@ -1,11 +1,12 @@
 def call(Map config = [:]) {
 
     // Define variables for rbrcloud organization
-    def orgName = "rbrcloud"
     def registry = "ghcr.io"
+    def orgName = "rbrcloud"
 
     def imageName = "${registry}/${orgName}/${config.serviceName}".toLowerCase()
     def imageTag = "${imageName}:${config.tag}"
+    def latestTag = "${imageName}:latest"
 
     // Authenticate and push to the registry
     withCredentials([usernamePassword(credentialsId: "ghcr-token", usernameVariable: "GH_USERNAME", passwordVariable: "GH_TOKEN")]) {
@@ -25,6 +26,11 @@ def call(Map config = [:]) {
         echo "Pushing Docker image ${imageTag} to ${registry}"
         sh "docker push ${imageTag}"
 
+        if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
+            echo "Branch name is ${env.BRANCH_NAME}, tagging as latest..."
+            sh "docker tag ${imageTag} ${latestTag}"
+            sh "docker push ${latestTag}"
+        }
         echo "Successfully pushed ${imageTag} to ${registry}"
     }
 }
